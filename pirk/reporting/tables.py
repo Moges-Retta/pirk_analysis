@@ -1,6 +1,9 @@
+import os
+
 import numpy as np
 import pandas as pd
 
+from pirk.names import GENOTYPE_COLUMN,TREATMENT_COLUMN,LABEL_COLUMN
 
 def print_fit_table(combined_df, index, guess_dict, fit, pcov, trace_y, dirk_pirk_y, export_csv=False, csv_path=None):
     """
@@ -36,7 +39,7 @@ def print_fit_table(combined_df, index, guess_dict, fit, pcov, trace_y, dirk_pir
     threshold = 0.5  # relative error threshold
 
     print(
-        f"\nFitted Parameters and Standard Errors | index {index} : genotype {combined_df['genotype'][index]} Replicate {combined_df['replicate'][index]}\n")
+        f"\nFitted Parameters and Standard Errors | index {index} : genotype {combined_df[GENOTYPE_COLUMN][index]} Replicate {combined_df[TREATMENT_COLUMN][index]}\n")
     print(f"RMSE: {rmse:.3f}")
     print(f"{'Parameter':35} {'Value':>10} {'Std. Error':>12} {'95% CI':>15}")
     print("-" * 85)
@@ -62,9 +65,16 @@ def print_fit_table(combined_df, index, guess_dict, fit, pcov, trace_y, dirk_pir
 
     # Export table to CSV if requested
     if export_csv:
+        # Ensure output path is a directory
         if csv_path is None:
-            csv_path = f"fit_table_index_{index}.csv"
+            csv_path = f"fit_table_{combined_df[LABEL_COLUMN][index]}_index_{index}.csv"
+
+        # If user passed a directory, generate a filename inside it
+        if os.path.isdir(csv_path):
+            csv_path = os.path.join(csv_path, f"fit_table_{combined_df[LABEL_COLUMN][index]}_index_{index}.csv")
+
         df_export = pd.DataFrame(table_data)
-        df_export['RMSE'] = rmse
+        df_export["RMSE"] = rmse
+
         df_export.to_csv(csv_path, index=False)
         print(f"\n✅ Fit table exported to {csv_path}")
