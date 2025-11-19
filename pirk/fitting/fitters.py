@@ -1,189 +1,158 @@
 # Fitting all the experimental data using the same initial guess could lead to unreliable fit
 import numpy as np
-from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit
+from pirk.names import *
 
-from pirk.calculations.compute import find_steady_state_pirk_amplitudes
+from pirk.calculations.pirk import find_steady_state_pirk_amplitudes
 from pirk.fitting.models import construct_dirk_pirk, dirk_pirk
-from pirk.parsing.cleaning import prep_traces_for_fitting
+from pirk.parsing.prep_data_fit import prep_traces_for_fitting
 from pirk.parsing.loader import extract_Fluro_paras
 from pirk.plotting.fits import plot_trace_fits
+from pirk.reporting.printing import print_fit_table
 
+def run_dirk_pirk_fit(x_total, trace_y, p0, pirk_points, max_attempts=10, threshold=0.5):
+    """
+    Run curve_fit with retry logic.
+    Returns: fit, pcov, perr, fit_success
+    """
+    n = len(p0)
+    bounds = ([0] * n, [np.inf] * n)
 
-def fit_pirk_dirk(combined_df, index, guess_dict, plot_all=True):
-    global pirk_points
-
-    trace_x, trace_y, pirk_points, dirk_point_indexes = prep_traces_for_fitting(combined_df, index)
-
-    # fixed parameters that define the protocol
-
-    x_end = np.max(trace_x)
-    x_total_points = len(trace_x)
-
-    y_total = np.zeros(x_total_points)
-    x_total = np.linspace(0, x_end, x_total_points)
-
-    # parameters that could be fit to the data
-
-    amplitude = guess_dict['amplitude']
-    lifetime = guess_dict['lifetime']
-    y_offset = guess_dict['y_offset']
-    pirk_begin_amplitude = guess_dict['pirk_begin_amplitude']
-    pirk_end_amplitude = guess_dict['pirk_end_amplitude']
-    pirk_amplitude_recovery_lifetime = guess_dict['pirk_amplitude_recovery_lifetime']
-    offset_amplitude = guess_dict['offset_amplitude']
-    offset_lifetime = guess_dict['offset_lifetime']
-
-    dirk_pirk_x, dirk_pirk_y, pirk_times, relative_pirk_amplitudes = construct_dirk_pirk(x_total, pirk_points,
-                                                                                         amplitude,
-                                                                                         lifetime, y_offset,
-                                                                                         pirk_begin_amplitude,
-                                                                                         pirk_end_amplitude,
-                                                                                         pirk_amplitude_recovery_lifetime,
-                                                                                         offset_amplitude,
-                                                                                         offset_lifetime)
-
-    # print("relative_pirk_amplitudes", relative_pirk_amplitudes)
-
-    steady_state_pirk_x, steady_state_pirk_amplitude = find_steady_state_pirk_amplitudes(combined_df, index, dirk_par=0,
-                                                                                         number_baseline_points=10)
-
-    # print(steady_state_pirk_x, steady_state_pirk_amplitude)
-    # print(x_total, trace_y)
-    p0 = [amplitude,
-          lifetime, y_offset,
-          pirk_begin_amplitude, pirk_end_amplitude, pirk_amplitude_recovery_lifetime,
-          offset_amplitude, offset_lifetime]
-
-    bounds = ([0, 0, 0, 0, 0, 0, 0, 0],
-              [np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf])
-
-    print("Fitting Analytical model...")
-    import time
-
-    t0 = time.time()
     fit_success = False
-    rel_err = float('inf')  # Initialize with worst case
-    max_attempts = 10
-    threshold = 0.5
+    rel_err = float('inf')
     attempt = 0
 
-    # Try initial fit
+    weights = np.ones_like(trace_y)
+    peak_indices = np.where(trace_y > np.percentile(trace_y, 95))[0]  # top 5% as peaks
+    weights[peak_indices] = 1  # smaller sigma → higher weight
+
     try:
-        fit, pcov = curve_fit(dirk_pirk, x_total, trace_y, p0=p0, bounds=bounds, maxfev=100000, method='trf')
+        fit, pcov = curve_fit(
+            lambda x, *params: dirk_pirk(x, *params, pirk_points),
+            x_total,
+            trace_y,
+            p0=p0,
+            bounds=bounds,
+            sigma = weights,
+            maxfev=100_000,
+            method='trf'
+        )
         perr = np.sqrt(np.diag(pcov))
         rel_err = abs(perr[0] / fit[0]) if fit[0] != 0 else float('inf')
         fit_success = True
     except RuntimeError as e:
         print(f"Initial fit failed: {e}")
-        p0[0] = 0  # Reset parameter for retries
+        p0[0] = 0  # Reset first parameter for retries
 
-    # Retry loop if needed
+    # Retry loop
     while (rel_err > threshold or np.round(rel_err, 3) == 0) and p0[0] < 5 and attempt < max_attempts:
         p0[0] += 100
         try:
-            fit, pcov = curve_fit(dirk_pirk, x_total, trace_y, p0=p0, bounds=bounds, maxfev=100000, method='trf')
+            fit, pcov = curve_fit(
+                lambda x, *params: dirk_pirk(x, *params, pirk_points),
+                x_total,
+                trace_y,
+                p0=p0,
+                bounds=bounds,
+                sigma = weights,
+                maxfev=100_000,
+                method='trf'
+            )
             perr = np.sqrt(np.diag(pcov))
             rel_err = abs(perr[0] / fit[0]) if fit[0] != 0 else float('inf')
             fit_success = True
         except RuntimeError as e:
             print(f"Retry {attempt + 1} failed: {e}")
-            rel_err = float('inf')  # Force another attempt
+            rel_err = float('inf')
         attempt += 1
 
-    # Final report
+    return fit, pcov, perr, fit_success
+
+def postprocess_dirk_pirk_fit(fit, pirk_points, x_total, trace_y, combined_df, index):
+    """
+    Compute model outputs, time constants, relative amplitudes.
+    """
+    dirk_pirk_x, dirk_pirk_y, gH_values, pirk_times, relative_pirk_amplitudes = construct_dirk_pirk(
+        x_total, pirk_points, *fit
+    )
+
+    steady_state_pirk_x, steady_state_pirk_amplitude = find_steady_state_pirk_amplitudes(
+        combined_df, index, dirk_par=0, number_baseline_points=10
+    )
+    pirk_times = [0] + pirk_times
+
+    steady_state_pirk_amplitude = steady_state_pirk_amplitude*1000 if combined_df.at[index,LABEL_COLUMN] in [LABEL_ECS,LABEL_P700] else steady_state_pirk_amplitude
+
+    relative_pirk_amplitudes = [steady_state_pirk_amplitude] + relative_pirk_amplitudes
+
+    return {
+        MODEL_TIME: dirk_pirk_x,
+        MODEL_PREDICTION: dirk_pirk_y,
+        TIME_CONSTANTS: gH_values,
+        PIRK_TIMES: pirk_times,
+        PIRK_AMPLITUDES: relative_pirk_amplitudes,
+        STEADY_STATE_PIRK_TIME: steady_state_pirk_x,
+        STEADY_STATE_PIRK_AMPLITUDE: steady_state_pirk_amplitude
+    }
+
+
+def update_combined_df_with_fit(combined_df, index, fit, postprocessed, trace_x, trace_y):
+    combined_df.at[index, FIT_PARAMS] = fit
+    combined_df.at[index, STEADY_STATE_PIRK_TIME] = postprocessed[STEADY_STATE_PIRK_TIME]
+    combined_df.at[index, STEADY_STATE_PIRK_AMPLITUDE] = postprocessed[STEADY_STATE_PIRK_AMPLITUDE]
+    combined_df.at[index, TIME_CONSTANTS] = postprocessed[TIME_CONSTANTS]
+    combined_df.at[index, MODEL_TIME] = postprocessed[MODEL_TIME]
+    combined_df.at[index, MODEL_PREDICTION] = postprocessed[MODEL_PREDICTION]
+    combined_df.at[index, PIRK_AMPLITUDES] = postprocessed[PIRK_AMPLITUDES]
+    combined_df.at[index, PIRK_TIMES] = postprocessed[PIRK_TIMES]
+    combined_df.at[index, TIME_FITTED] = trace_x
+    combined_df.at[index, TRACE_FITTED] = trace_y
+
+
+def fit_pirk_dirk(combined_df, index, guess_dict):
+    """
+    Compute DIRK/PIRK fit and update DataFrame.
+    No plotting or printing.
+    """
+    trace_x, trace_y, pirk_points, dirk_point_indexes = prep_traces_for_fitting(combined_df, index)
+    x_end = np.max(trace_x)
+    x_total_points = len(trace_x)
+    x_total = np.linspace(0, x_end, x_total_points)
+
+    p0 = [
+        guess_dict[AMPLITUDE],
+        guess_dict[GH_START],
+        guess_dict[GH_END],
+        guess_dict[GH_LIFETIME],
+        guess_dict[PIRK_BEGIN_AMPLITUDE],
+        guess_dict[PIRK_END_AMPLITUDE],
+        guess_dict[PIRK_AMPLITUDE_RECOVERY_LIFETIME],
+        guess_dict[OFFSET_AMPLITUDE],
+        guess_dict[OFFSET_LIFETIME]
+    ]
+
+
+    fit, pcov, perr, fit_success = run_dirk_pirk_fit(x_total, trace_y, p0, pirk_points)
+
     if not fit_success:
-        # Populate with NaNs or defaults so the rest of the pipeline doesn't crash
         fit = [np.nan] * len(p0)
         pcov = np.full((len(p0), len(p0)), np.nan)
         perr = [np.nan] * len(p0)
-        dirk_pirk_y = np.full_like(trace_y, np.nan)
-        rmse = np.nan
-        ci = [np.nan] * len(p0)
-        print("⚠️ Curve fitting ultimately failed after retries.")
+        postprocessed = {
+            "dirk_pirk_x": np.full_like(trace_x, np.nan),
+            "dirk_pirk_y": np.full_like(trace_y, np.nan),
+            "gH_values": [np.nan] * len(p0),
+            "pirk_times": [np.nan] * len(p0),
+            "relative_pirk_amplitudes": [np.nan] * len(p0),
+            "steady_state_pirk_x": np.nan,
+            "steady_state_pirk_amplitude": np.nan
+        }
     else:
-        print(f"✅ Fitting completed in {time.time() - t0:.2f} seconds.")
+        postprocessed = postprocess_dirk_pirk_fit(fit, pirk_points, x_total, trace_y, combined_df, index)
 
-        dirk_pirk_x, dirk_pirk_y, pirk_times, relative_pirk_amplitudes = construct_dirk_pirk(x_total, pirk_points, *fit)
+    update_combined_df_with_fit(combined_df, index, fit, postprocessed, trace_x, trace_y)
 
-        pirk_times = [0] + pirk_times
-        relative_pirk_amplitudes = [steady_state_pirk_amplitude] + relative_pirk_amplitudes
-
-        plot_trace_fits(combined_df, index, dirk_pirk_x, dirk_pirk_y, trace_x, trace_y, gH_values,
-                        relative_pirk_amplitudes, pirk_times)
-
-
-        # Calculate standard errors
-        perr = np.sqrt(np.diag(pcov))
-
-        # Compute residuals (differences between actual and predicted)
-        residuals = trace_y - dirk_pirk_y
-
-        # Compute RMSE
-        rmse = np.sqrt(np.mean(residuals ** 2))
-
-        # Compute RMSE
-        ci = 1.96 * np.sqrt(np.diag(pcov))
-
-        labels = [
-            'amplitude',
-            'lifetime',
-            'y_offset',
-            'pirk_begin_amplitude',
-            'pirk_end_amplitude',
-            'pirk_amplitude_recovery_lifetime',
-            'offset_amplitude',
-            'offset_lifetime'
-        ]
-
-        # Print table
-        threshold = 0.5  # Threshold: relative error > 0.5 considered unreliable
-
-        print(
-            f"\nFitted Parameters and Standard Errors index. {index} : genotype {combined_df['genotype'][index]} Replicate :{combined_df['replicate'][index]}\n")
-        print(f"RMSE: {rmse:.3f}")
-
-        print(f"{'Parameter':35} {'Value':>10} {'Std. Error':>12} {'95% CI':>15}")
-        print("-" * 85)
-
-        for label, val, err in zip(labels, fit, perr):
-            rel_err = abs(err / val) if val != 0 else float('inf')
-            ci_low = val - 1.96 * err
-            ci_high = val + 1.96 * err
-
-            if rel_err > threshold or np.round(err, 3) == 0:
-                color_start = '\033[91m'  # Red for high relative error
-                color_end = '\033[0m'
-            else:
-                color_start = ''
-                color_end = ''
-
-            print(f"{color_start}{label:35} {val:10.3f} {err:12.3f} [{ci_low:7.3f}, {ci_high:7.3f}]{color_end}")
-
-        if plot_all:
-            experiment_name = combined_df['trace_label'][index]
-            fig, ax1 = plt.subplots()
-            fig.suptitle(f"index: {index}, experiment: {experiment_name}")
-            ax1.plot(dirk_pirk_x, dirk_pirk_y, 'g-', label='dirk_pirk_y')
-            ax1.plot(trace_x, trace_y, color='gray', alpha=0.5)
-
-            ax1.set_xlabel('time (s)')
-            ax1.set_ylabel('Fluorescence signal (a.u.)', color='g')
-            ax1.tick_params(axis='y', labelcolor='g')
-
-            # Create the third y-axis
-            ax3 = ax1.twinx()
-
-            # Offset the third y-axis
-            ax3.spines['right'].set_position(('outward', 60))
-            ax3.plot(pirk_times, relative_pirk_amplitudes, label='pirk_amplitudes', color='r', marker='o')
-            ax3.set_ylabel('relative pirk amplitudes (a.u.)', color='r')
-            ax3.tick_params(axis='y', labelcolor='r')
-            ax1.set_ylim(ymin=-0.1)
-            ax3.set_ylim(ymin=-0.1)
-
-            plt.tight_layout()
-            plt.show()
+    return fit, pcov, perr, postprocessed
 
 
 def fit_fm_values(trace,indices,ramp_lights):
@@ -194,10 +163,10 @@ def fit_fm_values(trace,indices,ramp_lights):
     inverse_intensity = [1 / r for r in ramp_lights]
 
     # Keys you want to extract
-    selected_keys = ['AFmP', 'FmP_step2', 'FmP_step3','FmP_step4',"FmP_step5"]
+    selected_keys = [AFMP, FMP_STEP2, FMP_STEP3,FMP_STEP4,FMP_STEP5]
     selected_values = [f_values[k] for k in selected_keys]
 
-    # Calculations for corrected FmPrime using multi-phase flash
+    # Calculations for corrected FmPrime using multiphase flash
     slope, intercept = np.polyfit(inverse_intensity, selected_values, deg=1)
 
     return [slope,intercept]

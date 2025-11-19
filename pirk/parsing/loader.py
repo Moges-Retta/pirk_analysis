@@ -36,12 +36,6 @@ def extract_Fluro_paras(trace, indices):
     Fs_trace = np.sort(trace[indices["fs_begin"]:indices["fs_end"]])[::-1]
     AFmP_trace = np.sort(trace[indices["Fm_1_begin"]:indices["Fm_1_end"]])[::-1]
 
-    # Fs_trace = trace[indices["fs_begin"]:indices["fs_end"]]
-    # Fs_trace.sort(reverse=True)
-
-    # AFmP_trace = trace[indices["Fm_1_begin"]:indices["Fm_1_end"]]
-    # AFmP_trace.sort(reverse=True)
-
     Fs = np.mean(Fs_trace[-4:-1])  # the last 4 values of F
     AFmP = np.mean(AFmP_trace[2:20])  # the 18 large values
 

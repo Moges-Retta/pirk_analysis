@@ -1,22 +1,70 @@
-# Compute correlation matrix from covariance matrix
-def plot_corr_matrix(pcov, labels):
-    lower_triangle = np.tril(pcov)
+import numpy as np
+import pandas as pd
 
-    param_std = np.sqrt(np.diag(pcov))  # Standard deviations
-    outer_std = np.outer(param_std, param_std)
 
-    # Avoid division by zero
-    with np.errstate(divide='ignore', invalid='ignore'):
-        corr_matrix = np.divide(pcov, outer_std)
-        corr_matrix[~np.isfinite(corr_matrix)] = 0  # Replace nan/inf with 0
+def print_fit_table(combined_df, index, guess_dict, fit, pcov, trace_y, dirk_pirk_y, export_csv=False, csv_path=None):
+    """
+    Print a table of fitted parameters, standard errors, and 95% confidence intervals.
+    Optionally, export the table to a CSV file.
 
-        # Create mask for upper triangle
-        mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
+    Parameters
+    ----------
+    combined_df : pd.DataFrame
+        DataFrame containing metadata like genotype and replicate.
+    index : int
+        Index of the current trace.
+    guess_dict : dict
+        Dictionary of initial guess parameter names and values.
+    fit : array-like
+        Fitted parameter values.
+    pcov : array-like
+        Covariance matrix from the fitting.
+    trace_y : array-like
+        Original y-values.
+    dirk_pirk_y : array-like
+        Fitted y-values.
+    export_csv : bool, optional
+        Whether to export the table to CSV (default False).
+    csv_path : str, optional
+        Path to save the CSV file if export_csv is True.
+    """
+    perr = np.sqrt(np.diag(pcov))
+    residuals = trace_y - dirk_pirk_y
+    rmse = np.sqrt(np.mean(residuals ** 2))
+    labels = list(guess_dict.keys())
 
-    # Plot only lower triangle
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(corr_matrix, xticklabels=labels, yticklabels=labels,
-                mask=mask, annot=True, fmt=".2f", cmap='coolwarm', vmin=-1, vmax=1)
-    plt.title("Lower Triangle of Correlation Matrix")
-    plt.tight_layout()
-    plt.show()
+    threshold = 0.5  # relative error threshold
+
+    print(
+        f"\nFitted Parameters and Standard Errors | index {index} : genotype {combined_df['genotype'][index]} Replicate {combined_df['replicate'][index]}\n")
+    print(f"RMSE: {rmse:.3f}")
+    print(f"{'Parameter':35} {'Value':>10} {'Std. Error':>12} {'95% CI':>15}")
+    print("-" * 85)
+
+    table_data = []
+    for label, val, err in zip(labels, fit, perr):
+        rel_err = abs(err / val) if val != 0 else float('inf')
+        ci_low = val - 1.96 * err
+        ci_high = val + 1.96 * err
+
+        color_start = '\033[91m' if rel_err > threshold or np.round(err, 3) == 0 else ''
+        color_end = '\033[0m' if color_start else ''
+
+        print(f"{color_start}{label:35} {val:10.3f} {err:12.3f} [{ci_low:7.3f}, {ci_high:7.3f}]{color_end}")
+
+        table_data.append({
+            'Parameter': label,
+            'Value': val,
+            'Std_Error': err,
+            'CI_Lower': ci_low,
+            'CI_Upper': ci_high
+        })
+
+    # Export table to CSV if requested
+    if export_csv:
+        if csv_path is None:
+            csv_path = f"fit_table_index_{index}.csv"
+        df_export = pd.DataFrame(table_data)
+        df_export['RMSE'] = rmse
+        df_export.to_csv(csv_path, index=False)
+        print(f"\n✅ Fit table exported to {csv_path}")

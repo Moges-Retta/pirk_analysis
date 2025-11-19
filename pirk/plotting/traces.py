@@ -1,65 +1,79 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from matplotlib import pyplot as plt
 
-
-def plot_traces_genotype_replicate(trace, time, pirk_points, dirk_begin):
-    df = pd.DataFrame({
-        'Time (ms)': time,
-        'Trace': trace})
-
-    peak_trace = trace[pirk_points]
-    peak_time = time[pirk_points]
-
-    fig = px.scatter(df, x='Time (ms)', y='Trace')
-    fig.add_trace(go.Scatter(x=df['Time (ms)'], y=df['Trace'], mode='lines'))
-    fig.add_trace(
-        go.Scatter(x=peak_time, y=peak_trace, mode='markers', name='Pirk points', marker=dict(color='yellow', size=8)))
-
-    # Add shaded region from t_off to end
-    fig.add_vrect(x0=dirk_begin, x1=time[-1],
-                  fillcolor="lightgray", opacity=0.6,
-                  layer="below", line_width=0)
-
-    fig.update_layout(
-        template="plotly_white",
-        yaxis_title=dict(text="max normalized trace ", font=dict(size=18)),  # Custom x-axis label font size
-    )
-    fig.show()
-
-
-def plot_PAM(trace, i_inc, genotype, replicate, color='red', figsize=(10, 3)):
+def plot_traces_genotype_replicate(
+    trace, time, pirk_points, dirk_begin,
+    genotype=None, replicate=None,
+    trace_color='blue', pirk_color='yellow', pirk_size=8,
+    shaded_color='lightgray', shaded_opacity=0.6
+):
     """
-    Plot a PAM (Pulse-Amplitude Modulation) signal.
+    Plot a fluorescence trace with Pirk points and a shaded Dirk period.
 
     Parameters
     ----------
     trace : array-like
-        Signal values to plot.
-    i_inc : float or int
-        Light intensity increment.
-    genotype : str
-        Plant genotype.
-    replicate : int
-        Replicate number.
-    color : str, optional
-        Line color (default 'red').
-    figsize : tuple, optional
-        Figure size (default (10, 3)).
+        Signal trace values.
+    time : array-like
+        Corresponding time values (ms or s).
+    pirk_points : list or array of int
+        Indices of Pirk points.
+    dirk_begin : float
+        Time value when Dirk period starts (shaded region).
+    genotype : str, optional
+        Genotype name to show in the title.
+    replicate : int, optional
+        Replicate number to show in the title.
+    trace_color : str, optional
+        Color of the trace line.
+    pirk_color : str, optional
+        Color of Pirk point markers.
+    pirk_size : int, optional
+        Marker size for Pirk points.
+    shaded_color : str, optional
+        Color of the shaded Dirk period.
+    shaded_opacity : float, optional
+        Opacity of the shaded Dirk period.
 
     Returns
     -------
-    fig, ax : matplotlib.figure.Figure, matplotlib.axes.Axes
-        Figure and axes objects for further customization.
+    fig : plotly.graph_objects.Figure
+        Plotly figure object.
     """
-    fig, ax = plt.subplots(figsize=figsize)
-    ax.plot(trace, color=color, linewidth=1.5)
-    ax.set_xlabel("Pulse number")
-    ax.set_ylabel("Fluorescence (a.u.)")  # Replace with correct units if known
-    ax.set_title(f"PAM Signal | Genotype: {genotype}, Replicate: {replicate}, Iinc={i_inc}")
-    ax.grid(True, linestyle='--', alpha=0.5)
-    plt.tight_layout()
-    plt.show()
+    df = pd.DataFrame({'Time (ms)': time, 'Trace': trace})
+    peak_trace = trace[pirk_points]
+    peak_time = time[pirk_points]
 
-    return fig, ax
+    fig = px.scatter(df, x='Time (ms)', y='Trace', opacity=0)  # invisible scatter for layout
+
+    # Add trace line
+    fig.add_trace(go.Scatter(x=df['Time (ms)'], y=df['Trace'],
+                             mode='lines', line=dict(color=trace_color),
+                             name='Trace'))
+
+    # Add Pirk points
+    fig.add_trace(go.Scatter(x=peak_time, y=peak_trace,
+                             mode='markers', name='Pirk points',
+                             marker=dict(color=pirk_color, size=pirk_size)))
+
+    # Add shaded Dirk period
+    fig.add_vrect(x0=dirk_begin, x1=time[-1],
+                  fillcolor=shaded_color, opacity=shaded_opacity,
+                  layer="below", line_width=0, annotation_text="Dirk period", annotation_position="top left")
+
+    # Update layout
+    title_text = "Fluorescence Trace"
+    if genotype is not None and replicate is not None:
+        title_text += f" | Genotype: {genotype}, Replicate: {replicate}"
+
+    fig.update_layout(
+        template="plotly_white",
+        title=dict(text=title_text, x=0.5, xanchor='center'),
+        yaxis_title="Max normalized trace",
+        xaxis_title="Time (ms)",
+        font=dict(size=14)
+    )
+
+    fig.show()
+    return fig
