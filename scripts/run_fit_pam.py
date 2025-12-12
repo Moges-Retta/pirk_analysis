@@ -15,7 +15,7 @@ for col in columns_to_add:
 
 indexes = combined_df[(combined_df[LABEL_COLUMN] == LABEL_PAM)].index
 
-for index in indexes:
-    calculate_fluorescence_values(combined_df, index,plot_all=False)
+for index in [indexes[0]]:#indexes:
+    calculate_fluorescence_values(combined_df, index,plot_all=True)
 
-save_combined_df(combined_df, FILE_NAME_PAM_FITS, DEFAULT_OUTPUT_PATH, file_format='pkl', overwrite=True)
+# save_combined_df(combined_df, FILE_NAME_PAM_FITS, DEFAULT_OUTPUT_PATH, file_format='pkl', overwrite=True)
