@@ -46,7 +46,9 @@ def run_dirk_pirk_fit(x_total, trace_y, p0, pirk_points, max_attempts=10, thresh
 
     # Retry loop
     while (rel_err > threshold or np.round(rel_err, 3) == 0) and p0[0] < 5 and attempt < max_attempts:
-        p0[0] += 100
+        print("Fitting with retry loop")
+        p0[0] += 0.1*p0[0] # new initial guess
+
         try:
             fit, pcov = curve_fit(
                 lambda x, *params: dirk_pirk(x, *params, pirk_points),
@@ -114,6 +116,7 @@ def fit_pirk_dirk(combined_df, index, guess_dict):
     Compute DIRK/PIRK fit and update DataFrame.
     No plotting or printing.
     """
+
     trace_x, trace_y, pirk_points, dirk_point_indexes = prep_traces_for_fitting(combined_df, index)
     x_end = np.max(trace_x)
     x_total_points = len(trace_x)
