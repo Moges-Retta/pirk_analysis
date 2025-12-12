@@ -3,7 +3,8 @@ import os
 import numpy as np
 import pandas as pd
 
-from pirk.names import GENOTYPE_COLUMN,TREATMENT_COLUMN,LABEL_COLUMN
+from pirk.names import GENOTYPE_COLUMN, TREATMENT_COLUMN, LABEL_COLUMN, REPLICATE_COLUMN, TREATMENT_NAME
+
 
 def print_fit_table(combined_df, index, guess_dict, fit, pcov, trace_y, dirk_pirk_y, export_csv=False, csv_path=None):
     """
@@ -39,7 +40,10 @@ def print_fit_table(combined_df, index, guess_dict, fit, pcov, trace_y, dirk_pir
     threshold = 0.5  # relative error threshold
 
     print(
-        f"\nFitted Parameters and Standard Errors | index {index} : genotype {combined_df[GENOTYPE_COLUMN][index]} Replicate {combined_df[TREATMENT_COLUMN][index]}\n")
+        f"\nFitted Parameters and Standard Errors | index {index} : "
+        f"{GENOTYPE_COLUMN}: {combined_df[GENOTYPE_COLUMN][index]} "
+        f"{REPLICATE_COLUMN}: {combined_df[REPLICATE_COLUMN][index]} "
+        f"{TREATMENT_NAME}: {combined_df[TREATMENT_COLUMN][index]}\n")
     print(f"RMSE: {rmse:.3f}")
     print(f"{'Parameter':35} {'Value':>10} {'Std. Error':>12} {'95% CI':>15}")
     print("-" * 85)
