@@ -43,20 +43,18 @@ def construct_dirk_pirk (x_total, pirk_points, dirk_amplitude,
     relative_pirk_amplitudes = []
     pirk_times = []
 
-
     for i, pirk_begin in enumerate(pirk_points):
         if i == len(pirk_points) - 1:
             pirk_end = x_total[-1]
         else:
             pirk_end = pirk_points[i + 1]
+
         pirk_begin_index = find_closest_index(x_total, pirk_begin)
         pirk_end_index = find_closest_index(x_total, pirk_end)
         # print(pirk_begin, pirk_end, pirk_begin_index, pirk_end_index)
 
-        # x = np.linspace(pirk_begin, pirk_end, pirk_end_index - pirk_begin_index)
-        # x = np.linspace(pirk_begin, pirk_end, pirk_end_index - pirk_begin_index)
         x = np.linspace(x_total[pirk_begin_index], x_total[pirk_end_index], pirk_end_index - pirk_begin_index)
-
+        # print(x)
         # print('i',i,"len(x) =", len(x),'pirk_points',pirk_points)
 
         # print(x[0], pirk_begin_amplitude, pirk_end_amplitude, pirk_amplitude_recovery_lifetime)
