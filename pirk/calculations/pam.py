@@ -149,7 +149,7 @@ def check_fluorescence_data_quality(trace, f_values, indices, ramp_lights) -> di
 def calculate_fluorescence_values(combined_df, index, plot_all):
     pulses = parse_array(combined_df[NUMBER_PULSES][index])
     ramp_lights = parse_array(combined_df[RAMP_LIGHT][index])
-    trace = parse_array(combined_df[TRACE_COLUMN_ORI][index])
+    trace = parse_array(combined_df[TRACE_COLUMN][index])
     genotype = combined_df[GENOTYPE_COLUMN][index]
 
     indices = calculate_indices(pulses, ramp_lights)
