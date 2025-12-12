@@ -31,7 +31,7 @@ def parse_indices(value):
         return 0, 0  # Fallback to 0,0 on failure
 
 
-def extract_Fluro_paras(trace, indices):
+def extract_Fluro_paras(trace, indices,ramp_lights):
     # get trace and sort it from low to high
     Fs_trace = np.sort(trace[indices["fs_begin"]:indices["fs_end"]])[::-1]
     AFmP_trace = np.sort(trace[indices["Fm_1_begin"]:indices["Fm_1_end"]])[::-1]
@@ -41,7 +41,7 @@ def extract_Fluro_paras(trace, indices):
 
     Fm_steps = {
         f"FmP_step{i}": np.mean(trace[indices[f"Fm_{i}_begin"]:indices[f"Fm_{i}_end"]][2:6])
-        for i in range(2, 6)  # take the 4 largest values and average them
+        for i in range(1, len(ramp_lights)+1)  # take the 4 largest values and average them
     }
 
     FoPrime = np.mean(trace[indices["FoPrime_begin"]:indices["FoPrime_end"]][2:6])
