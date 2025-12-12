@@ -100,7 +100,6 @@ def _plot_dirk_pirk_fits(combined_df, index, ax1, ax2, ax3):
     ax3.spines['right'].set_position(('outward', 60))
     pirk_times = combined_df[PIRK_TIMES][index]
     relative_pirk_amplitudes = combined_df[PIRK_AMPLITUDES][index]
-    relative_pirk_amplitudes[0]=combined_df[FIT_PARAMS][index][0] # FIXME!!!
 
     if len(pirk_times) > 0 and len(relative_pirk_amplitudes) > 0:
         ax3.plot(pirk_times, relative_pirk_amplitudes, label=PIRK_AMPLITUDES, color='r', marker='o')
