@@ -5,7 +5,7 @@ from pirk.parsing.loader import parse_array, parse_indices
 from scipy.stats import linregress
 import matplotlib.pyplot as plt
 
-from pirk.names import DIRK_INDICES_COLUMN, TRACE_COLUMN,TIME_COLUMN
+from pirk.names import DIRK_INDICES_COLUMN, TRACE_COLUMN,TIME_COLUMN,PIRK_POINTS_COLUMN
 
 
 def find_predirk_baseline(combined_df, index, number_baseline_points=10):
@@ -41,10 +41,10 @@ def find_steady_state_pirk_amplitudes(combined_df, index, dirk_par=0, number_bas
         """
     b, e = parse_indices(combined_df[DIRK_INDICES_COLUMN][index])
 
-    trace_y = parse_array(combined_df[TRACE_COLUMN][index])[b:e]
-    trace_x =  parse_array(combined_df[TIME_COLUMN][index])[b:e]
+    trace_y = parse_array(combined_df[TRACE_COLUMN][index])
+    trace_x =  parse_array(combined_df[TIME_COLUMN][index])
 
-    base_b, base_e = find_predirk_baseline(combined_df, index) # n points before dirk begin =base_e
+    base_b, base_e = find_predirk_baseline(combined_df, index) # n points before dirk begin =base_b,base_e=dirk_begin
     baseline_x = trace_x[base_b: base_e - 1]
     baseline_y = trace_y[base_b: base_e - 1]
 
@@ -61,7 +61,10 @@ def find_steady_state_pirk_amplitudes(combined_df, index, dirk_par=0, number_bas
     steady_state_pirk_baseline_fit_line = fitlin.slope * trace_x[base_b: base_e] + fitlin.intercept
 
     steady_state_pirk_amplitude = steady_state_pirk_measurement - steady_state_pirk_baseline_fit_line[-1]
-    # print(steady_state_pirk_amplitude)
+    # print(trace_y[base_e-1],trace_y[base_e],trace_y[base_e+1],steady_state_pirk_amplitude)
+    # print(base_e-1,base_e,base_e+1,steady_state_pirk_amplitude)
+    # print(combined_df[PIRK_POINTS_COLUMN][index])
+
     if plot_it:
         plt.figure()
         plt.plot(trace_x[b: b + 20], trace_y[b: b + 20], color='blue',label='trace, 20pts')
@@ -69,10 +72,12 @@ def find_steady_state_pirk_amplitudes(combined_df, index, dirk_par=0, number_bas
         plt.plot(trace_x[base_b: base_e-1], trace_y[base_b: base_e-1], color='yellow', label='baseline trace')
         plt.plot(trace_x[base_b: base_e], steady_state_pirk_baseline_fit_line, color='green', label='linear fit')
         plt.scatter(steady_state_pirk_measurement_x, steady_state_pirk_measurement, color='red', label='ss last point')
+        plt.scatter(combined_df[TIME_COLUMN][index][b],  combined_df[TRACE_COLUMN][index][b], color = 'yellow',label = 'drik begin')
+
         plt.plot([steady_state_pirk_measurement_x, steady_state_pirk_measurement_x],
                  [steady_state_pirk_baseline_fit_line[-1], steady_state_pirk_baseline_fit_line[-1] + steady_state_pirk_amplitude],
                  color='black',linewidth=2, label='ss amplitude')
-        # plt.plot(combined_df['520_time'][index][base_b : base_e], )
+        # plt.plot(trace_y)
         plt.legend()
         plt.show()
     return steady_state_pirk_measurement_x, steady_state_pirk_amplitude
