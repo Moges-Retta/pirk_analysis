@@ -27,6 +27,7 @@ def find_closest_index(arr, target):
         return pos - 1
 
 
+
 def add_object_column(df, col_name, default_content=None, replace=False):
     """
     Safely adds a column of object dtype to a DataFrame.
