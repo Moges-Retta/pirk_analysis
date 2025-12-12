@@ -46,7 +46,7 @@ indexes = combined_df[
     (combined_df[LABEL_COLUMN].isin(trace_to_fit_list))&
     (combined_df[GENOTYPE_COLUMN]=='Col-0')
     ].index
-index = indexes[2]
+index = indexes[1]
 
 
 fit, pcov, perr, postprocessed = fit_pirk_dirk(combined_df, index, guess_dict)
