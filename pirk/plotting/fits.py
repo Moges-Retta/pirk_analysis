@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 from pirk.names import ECS_Y_LABEL, LABEL_ECS, P700_Y_LABEL, MODEL_PREDICTION, LABEL_COLUMN, MODEL_TIME, TIME_CONSTANTS, \
-    PIRK_AMPLITUDES, PIRK_TIMES, FLURO_Y_LABEL
+    PIRK_AMPLITUDES, PIRK_TIMES, FLURO_Y_LABEL, LABEL_P700, TREATMENT_COLUMN, REPLICATE_COLUMN, GENOTYPE_COLUMN
 
 
 def plot_trace_fits(combined_df, index,dirk_pirk_x,dirk_pirk_y,trace_x,trace_y,gH_values,relative_pirk_amplitudes,pirk_times):
@@ -19,7 +19,7 @@ def plot_trace_fits(combined_df, index,dirk_pirk_x,dirk_pirk_y,trace_x,trace_y,g
     ax2 = ax1.twinx()
     if experiment_name == LABEL_ECS:
         label = ECS_Y_LABEL
-    elif experiment_name == P700_Y_LABEL:
+    elif experiment_name == LABEL_P700:
         label = P700_Y_LABEL
     else:
         label = FLURO_Y_LABEL
@@ -34,7 +34,7 @@ def plot_trace_fits(combined_df, index,dirk_pirk_x,dirk_pirk_y,trace_x,trace_y,g
 
     # Offset the third y-axis
     ax3.spines['right'].set_position(('outward', 60))
-    ax3.plot(pirk_times, relative_pirk_amplitudes, label='pirk_amplitudes', color='r', marker='o')
+    ax3.plot(pirk_times, relative_pirk_amplitudes, label=f'{PIRK_AMPLITUDES}', color='r', marker='o')
     ax3.set_ylabel('relative pirk amplitudes (a.u.)', color='r')
     ax3.tick_params(axis='y', labelcolor='r')
     ax1.set_ylim(ymin=-0.1)
@@ -97,7 +97,7 @@ def plot_PAM(trace, light_intensity, genotype, replicate, figsize=(10, 3), color
     plt.plot(trace, color=color, lw=1.5)
     plt.xlabel("Pulses (-)", fontsize=12)
     plt.ylabel("Fluorescence (590 nm)", fontsize=12)
-    plt.title(f"PAM Signal | Genotype: {genotype} | Replicate: {replicate} | Iinc={light_intensity}", fontsize=14)
+    plt.title(f"PAM Signal | {GENOTYPE_COLUMN}: {genotype} | {REPLICATE_COLUMN}: {replicate} | {TREATMENT_COLUMN}={light_intensity}", fontsize=14)
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.tight_layout()
 
