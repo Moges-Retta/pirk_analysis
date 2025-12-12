@@ -160,15 +160,16 @@ def fit_pirk_dirk(combined_df, index, guess_dict):
 
 def fit_fm_values(trace,indices,ramp_lights):
 
-    f_values = extract_Fluro_paras(trace,indices)
-
+    f_values = extract_Fluro_paras(trace,indices,ramp_lights)
+    # print(f_values)
     # SET THE INVERSE INTENSITIES FOR THE AVENSON INTENSITY RAMP
     inverse_intensity = [1 / r for r in ramp_lights]
 
     # Keys you want to extract
-    selected_keys = [AFMP, FMP_STEP2, FMP_STEP3,FMP_STEP4,FMP_STEP5]
-    selected_values = [f_values[k] for k in selected_keys]
-
+    f_values_keys = list(f_values.keys()) #[AFMP, FMP_STEP2, FMP_STEP3,FMP_STEP4,FMP_STEP5]
+    selected_keys = [AFMP, FMP_STEP2, FMP_STEP3] # FIXME needs to be automated
+    selected_values = [f_values[k] for k in selected_keys] #  MP steps only
+    # print(inverse_intensity,selected_values)
     # Calculations for corrected FmPrime using multiphase flash
     slope, intercept = np.polyfit(inverse_intensity, selected_values, deg=1)
 
