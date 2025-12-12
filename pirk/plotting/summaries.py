@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from pirk.fitting.fitters import prep_traces_for_fitting
 from pirk.names import *
 
 from pirk.parsing.helpers import add_object_column
@@ -81,8 +82,8 @@ def set_global_limits(figures):
 
 
 def _plot_dirk_pirk_fits(combined_df, index, ax1, ax2, ax3):
-    trace_x = combined_df[TIME_COLUMN][index]
-    trace_y = combined_df[TRACE_COLUMN][index]
+    trace_x, trace_y, pirk_points, dirk_point_indexes = prep_traces_for_fitting(combined_df, index)
+
     dirk_pirk_x = combined_df[MODEL_TIME][index]
     dirk_pirk_y = combined_df[MODEL_PREDICTION][index]
     ax1.plot(dirk_pirk_x, dirk_pirk_y, 'g-', label=MODEL_TIME)
@@ -99,6 +100,8 @@ def _plot_dirk_pirk_fits(combined_df, index, ax1, ax2, ax3):
     ax3.spines['right'].set_position(('outward', 60))
     pirk_times = combined_df[PIRK_TIMES][index]
     relative_pirk_amplitudes = combined_df[PIRK_AMPLITUDES][index]
+    relative_pirk_amplitudes[0]=combined_df[FIT_PARAMS][index][0] # FIXME!!!
+
     if len(pirk_times) > 0 and len(relative_pirk_amplitudes) > 0:
         ax3.plot(pirk_times, relative_pirk_amplitudes, label=PIRK_AMPLITUDES, color='r', marker='o')
 
@@ -124,7 +127,12 @@ def plot_all_dirk_pirk_fits(combined_df,trace_label):
 
             ax2 = ax1.twinx()
 
-            label = ECS_Y_LABEL if trace_label is LABEL_ECS else P700_Y_LABEL
+            if trace_label == LABEL_ECS:
+                label = ECS_Y_LABEL
+            elif trace_label == LABEL_P700:
+                label = P700_Y_LABEL
+            else:
+                label = FLURO_Y_LABEL
 
             ax2.set_ylabel(label, color='b')
             ax2.tick_params(axis='y', labelcolor='b')
@@ -134,7 +142,6 @@ def plot_all_dirk_pirk_fits(combined_df,trace_label):
             ax3.spines['right'].set_position(('outward', 60))
             ax3.set_ylabel('Relative pirk amplitudes (a.u.)', color='r')
             ax3.tick_params(axis='y', labelcolor='r')
-
             plt.suptitle(f"{genotype}, {TREATMENT_NAME}: {li}")
 
             # Filter by genotype AND light intensity
@@ -202,14 +209,14 @@ def plot_extracted_params(combined_df,trace_labels):
 
     # === Add derived parameter ===
     add_object_column(combined_df, 'total_fit_amplitude')
-    indexes = combined_df[combined_df['trace_label'] == 'ecs-pirk'].index
+    indexes = combined_df[combined_df['trace_label'] == trace_labels].index
     for index in indexes:
         combined_df.at[index, 'total_fit_amplitude'] = (
             np.array(combined_df['signal_amplitude'][index]) +
             np.array(combined_df['slow_phase_amplitude'][index])
         )
 
-    parameter_plots['total_fit_amplitude'] = ['total_fit_amplitude', 'genotype', 'ecs-pirk']
+    parameter_plots['total_fit_amplitude'] = ['total_fit_amplitude', 'genotype', trace_labels]
 
     # === Plot parameters ===
     unique_treatments = combined_df[TREATMENT_COLUMN].unique()
