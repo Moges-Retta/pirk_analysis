@@ -5,9 +5,10 @@ from scripts.load_data import load_combined_df
 
 combined_df = load_combined_df(DEFAULT_OUTPUT_PATH,FILE_NAME_PIRK_FITS)
 
-plot_all_dirk_pirk_fits(combined_df,LABEL_ECS)
+# plot_all_dirk_pirk_fits(combined_df,LABEL_ECS)
+plot_all_dirk_pirk_fits(combined_df,LABEL_P700)
 
-plot_extracted_params(combined_df,LABEL_ECS)
+# plot_extracted_params(combined_df,LABEL_ECS)
 # save_combined_df(combined_df, FILE_NAME_PIRK_FITS, DEFAULT_OUTPUT_PATH, file_format='pkl', overwrite=True)
 #
 # plot_all_dirk_pirk_fits(combined_df,LABEL_P700)
