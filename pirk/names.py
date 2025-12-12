@@ -1,7 +1,7 @@
-FILE_NAME = 'combined_df_processed.pkl'
-FILE_NAME_PIRK_FITS = 'combined_df_PIRK_fits'
-FILE_NAME_PAM_FITS = 'combined_df_PAM_fits'
-FILE_NAME_PAM_P700_FITS = 'combined_df_PAM_P700_fits'
+FILE_NAME = 'combined_df_D1_screen_3.pkl'
+FILE_NAME_PIRK_FITS = 'combined_df_D1_screen_3_PIRK_fits'
+FILE_NAME_PAM_FITS = 'combined_df_D1_screen_2_PAM_fits'
+FILE_NAME_PAM_P700_FITS = 'combined_df_D1_screen_PAM_P700_fits'
 
 # -----------------------------
 # Column names in combined_df
@@ -14,7 +14,7 @@ GENOTYPE_COLUMN = "genotype"
 REPLICATE_COLUMN = "replicate"
 LABEL_COLUMN = "trace_label"
 TREATMENT_COLUMN = "light_intensity"
-TREATMENT_NAME="Light",
+TREATMENT_NAME="Light"
 LABEL_ECS = "ecs-pirk"
 LABEL_P700 = "P700-pirk"
 LABEL_FLURO = "fluro-pirk"
@@ -95,8 +95,8 @@ PSI_OR = "PSI_or"
 # -----------------------------
 # Standard file paths / directories (can be overridden)
 # -----------------------------
-DEFAULT_DATA_PATH = "/Users/retta001/Documents/Expt/pirk_analysis/pirk/data/"
-DEFAULT_OUTPUT_PATH = "/Users/retta001/Documents/Expt/pirk_analysis/pirk/results/"
+DEFAULT_DATA_PATH = "/Users/retta001/Documents/Collaborations_groups_people/pirk_analysis/pirk/data/"
+DEFAULT_OUTPUT_PATH = "/Users/retta001/Documents/Collaborations_groups_people/pirk_analysis/pirk/results/"
 
 # -----------------------------
 # Default parameters for baseline / fitting
