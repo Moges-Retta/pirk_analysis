@@ -54,7 +54,7 @@ def prep_traces_for_fitting(combined_df, index):
     pirk_points = [0] + [trace_x[i] for i in dirk_point_indexes]
 
     # trace_y_peak = [trace_y[0]] +[trace_y[i] for i in dirk_point_indexes]
-    #
+
     # plt.figure()
     # plt.plot(trace_x,trace_y)
     # plt.plot(pirk_points,trace_y_peak,'o',color='red',label='prik points')
