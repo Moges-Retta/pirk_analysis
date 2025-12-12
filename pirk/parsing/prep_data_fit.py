@@ -1,6 +1,7 @@
 # extract x and y values for fitting using baseline_begin_time and baseline_end_time obtained through visual inspection
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 
 from pirk.parsing.loader import parse_indices, parse_array
 from pirk.parsing.helpers import find_closest_index
@@ -50,9 +51,15 @@ def prep_traces_for_fitting(combined_df, index):
     pps = parse_array(combined_df[PIRK_POINTS_COLUMN][index])
 
     dirk_point_indexes = [i - b for i in pps if b <= i < e]
+    pirk_points = [0] + [trace_x[i] for i in dirk_point_indexes]
 
-    pirk_points = [trace_x[i] for i in dirk_point_indexes]
-
+    # trace_y_peak = [trace_y[0]] +[trace_y[i] for i in dirk_point_indexes]
+    #
+    # plt.figure()
+    # plt.plot(trace_x,trace_y)
+    # plt.plot(pirk_points,trace_y_peak,'o',color='red',label='prik points')
+    # plt.xlabel('TIme (s)')
+    # plt.show()
     return trace_x, trace_y, pirk_points, dirk_point_indexes
 
 
