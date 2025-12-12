@@ -56,7 +56,7 @@ def _calculate_PSI(trace, trace_indices):
 
 
 def calculate_ps1_all(combined_df, index, trace_indices,plot_all=True):
-    trace = parse_array(combined_df[TRACE_COLUMN_ORI][index])
+    trace = parse_array(combined_df[TRACE_COLUMN][index])
     [PSI_ox, PSI_act, PSI_open, PSI_or] = _calculate_PSI(trace, trace_indices)
 
     add_new_cols = True
