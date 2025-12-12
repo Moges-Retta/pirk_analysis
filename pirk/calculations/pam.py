@@ -155,7 +155,7 @@ def calculate_fluorescence_values(combined_df, index, plot_all):
     indices = calculate_indices(pulses, ramp_lights)
 
     fit_values = fit_fm_values(trace, indices, ramp_lights)
-    f_values = extract_Fluro_paras(trace, indices)
+    f_values = extract_Fluro_paras(trace, indices,ramp_lights)
     valid_values = check_fluorescence_data_quality(trace, f_values, indices,ramp_lights)
 
     if plot_all:
