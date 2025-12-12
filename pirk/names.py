@@ -1,7 +1,7 @@
-FILE_NAME = 'combined_df_D1_screen_3.pkl'
-FILE_NAME_PIRK_FITS = 'combined_df_D1_screen_3_PIRK_fits'
+FILE_NAME = 'combined_df_D1_screen.pkl'
+FILE_NAME_PIRK_FITS = 'combined_df_D1_screen_2_PIRK_fits'
 FILE_NAME_PAM_FITS = 'combined_df_D1_screen_2_PAM_fits'
-FILE_NAME_PAM_P700_FITS = 'combined_df_D1_screen_PAM_P700_fits'
+FILE_NAME_PAM_P700_FITS = 'combined_df_D1_screen_2_PAM_P700_fits'
 
 # -----------------------------
 # Column names in combined_df
