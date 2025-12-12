@@ -29,45 +29,54 @@ for col in columns_to_add:
     combined_df = add_object_column(combined_df, col, default_content=[], replace=True)
 
 guess_dict = {
-    AMPLITUDE:0.5,
-    GH_START: 50,
-    GH_END: 100,
+    AMPLITUDE:0.3,
+    GH_START: 10,
+    GH_END: 110,
     GH_LIFETIME: 0.08,
-    PIRK_BEGIN_AMPLITUDE: 0.5,
-    PIRK_END_AMPLITUDE: 1,
+    PIRK_BEGIN_AMPLITUDE: 0.05,
+    PIRK_END_AMPLITUDE: 2,
     PIRK_AMPLITUDE_RECOVERY_LIFETIME: 0.05,
-    OFFSET_AMPLITUDE: 0.1,
-    OFFSET_LIFETIME: 0.5
+    OFFSET_AMPLITUDE: 0.25,
+    OFFSET_LIFETIME: 0.05
 }
-
-# fit, pcov, perr, postprocessed = fit_pirk_dirk(combined_df, index, guess_dict)
 #
-# # Optional reporting
-# report_dirk_pirk_fit(combined_df, index, guess_dict, fit, pcov,
-#                      trace_y=combined_df.at[index, TRACE_FITTED],
-#                      dirk_pirk_y=postprocessed[MODEL_PREDICTION])
+trace_to_fit_list = [LABEL_ECS]#,LABEL_P700,LABEL_FLURO]
+
+indexes = combined_df[
+    (combined_df[LABEL_COLUMN].isin(trace_to_fit_list))&
+    (combined_df[GENOTYPE_COLUMN]=='Col-0')
+    ].index
+index = indexes[2]
+
+
+fit, pcov, perr, postprocessed = fit_pirk_dirk(combined_df, index, guess_dict)
+
+# Optional reporting
+report_dirk_pirk_fit(combined_df, index, guess_dict, fit, pcov,
+                     trace_y=combined_df.at[index, TRACE_FITTED],
+                     dirk_pirk_y=postprocessed[MODEL_PREDICTION])
 #
-# # Optional plotting
-# plot_dirk_pirk_fit(combined_df, index, postprocessed,
-#                    trace_x=combined_df.at[index, TIME_FITTED],
-#                    trace_y=combined_df.at[index,TRACE_FITTED])
-trace_to_fit_list = [LABEL_ECS,LABEL_P700,LABEL_FLURO]
+# Optional plotting
+plot_dirk_pirk_fit(combined_df, index, postprocessed,
+                   trace_x=combined_df.at[index, TIME_FITTED],
+                   trace_y=combined_df.at[index,TRACE_FITTED])
 
-indexes = combined_df[combined_df[LABEL_COLUMN].isin(trace_to_fit_list)].index
+
+# trace_to_fit_list = [LABEL_ECS,LABEL_P700,LABEL_FLURO]
 #
-for index in indexes:
-    fit, pcov, perr, postprocessed = fit_pirk_dirk(combined_df, index, guess_dict)
-    # Optional reporting
-    report_dirk_pirk_fit(combined_df, index, guess_dict, fit, pcov,
-                         trace_y=combined_df.at[index, TRACE_FITTED],
-                         dirk_pirk_y=postprocessed[MODEL_PREDICTION])
-
-    # Optional plotting
-    # plot_dirk_pirk_fit(combined_df, index, postprocessed,
-    #                    trace_x=combined_df.at[index, TIME_FITTED],
-    #                    trace_y=combined_df.at[index, TRACE_FITTED])
-
-save_combined_df(combined_df, FILE_NAME_PIRK_FITS, DEFAULT_OUTPUT_PATH, file_format='pkl', overwrite=True)
-
-
-
+# indexes = combined_df[combined_df[LABEL_COLUMN].isin(trace_to_fit_list)].index
+# #
+# for index in indexes:
+#     fit, pcov, perr, postprocessed = fit_pirk_dirk(combined_df, index, guess_dict)
+#
+#     # Optional reporting
+#     report_dirk_pirk_fit(combined_df, index, guess_dict, fit, pcov,
+#                          trace_y=combined_df.at[index, TRACE_FITTED],
+#                          dirk_pirk_y=postprocessed[MODEL_PREDICTION])
+#
+#     # # Optional plotting
+#     # plot_dirk_pirk_fit(combined_df, index, postprocessed,
+#     #                    trace_x=combined_df.at[index, TIME_FITTED],
+#     #                    trace_y=combined_df.at[index, TRACE_FITTED])
+#
+# save_combined_df(combined_df, FILE_NAME_PIRK_FITS, DEFAULT_OUTPUT_PATH, file_format='pkl', overwrite=True)
